@@ -1,0 +1,62 @@
+Examples of use of ./start.sh 
+(arguments are explained only on its first appearance)
+
+1) Phase 1
+java -cp ../bin recipesService.Server --phase1
+(run it from scripts folder)
+Use the menu to introduce a recipe and check if Log and TimestampVector data structures are correct.
+
+./start.sh 20000 --phase1
+(run it from scripts folder)
+Executes Log and TimestampVector with a predefined set of users and operations and compares it with a Log and TimestampVector previously calculated.
+
+2) Phases 2
+./start.sh 20000 3 --menu –nopurge
+Runs 3 Servers and a TestServer locally.
+$1: listening port for the TestServer 
+$2: number of Servers to be instantiated 
+--menu: runs in menu mode. (without --menu argument, it will run in simulated mode, i.e. user activity (add recipes) and dynamism (connections and disconnections) will be automatically generated.
+--nopurge: Log is not purged.
+
+./start.sh 20000 15 --logResults --nopurge --noremove
+Runs 15 Servers and a TestServer locally.
+User activity (add recipes) and dynamism (connections and disconnections) is automatically generated.
+Results will be stored in a file named as the groupId from config.properties file (on current path).
+--logResults: log results in the following two files:
+	<groupXX>: log of all executions and the result for each of them.
+	<groupXX>.data:
+		in the case that all solutions are equal, contains the final state of data structures.
+		in the case that NOT all solutions are equal, contains the first two found solutions that were different.
+	(<groupXX> is the value of groupId property in config.properties file (scripts folder))
+--nopurge: Log is not purged.
+--noremove: no remove operations are issued.
+
+./start.sh 20000 15 --logResults -path ../results --nopurge --noremove
+-path <path>: result files are created in ../results folder. If no -path is specified (as in previous example) files will be stored in current folder.
+
+3) Phases 3
+./start.sh 20000 3 --logResults -path ../results --menu
+Runs 3 Servers and a TestServer locally (and result files are created in ../results folder).
+Log is purged.
+Menu mode.
+
+./start.sh 20000 15 --logResults -path ../results --noremove
+Runs 15 Servers and a TestServer locally (and result files are created in ../results folder).
+Log is purged.
+Simulated activity and dynamism mode.
+No remove operations.
+
+4) Phases 4
+In phase 4.1 (extend application adding remove recipe operation), run start.sh script adding --remove argument to test your implementation. For formal evaluation use dslab web.
+./start.sh 20000 15 --logResults -path ../results
+Runs 15 Servers and a TestServer locally (and result files are created in ../results folder).
+Log is purged.
+Simulated activity and dynamism mode.
+Remove operations are issued.
+
+In phase 4.2 (evaluation of TSAE protocol), modify parameters of config.properties file (scripts folder) to evaluate TSAE protocol under different conditions and environments.
+Use runN.sh script to run N times start.sh script. Example:
+./runN.sh 10 20000 3 --logResults -path ../results
+runs 10 times start.sh script with the following parameters:
+	./start.sh 20000 3 --logResults -path ../results 
+	Modify activitySimulation class only in case that in phase 4 you want to better understand or modify the modeling of activity and dynamicity (package recipesService.activitySimulation).

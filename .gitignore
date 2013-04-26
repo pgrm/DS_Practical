@@ -1,0 +1,16 @@
+*.class
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# emacs files
+*~
+
+# netbeans
+nbproject/*
+manifest.mf
+build.xml
+/build/
+/dist/
