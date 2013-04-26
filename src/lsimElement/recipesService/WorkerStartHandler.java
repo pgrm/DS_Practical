@@ -20,8 +20,6 @@
 package lsimElement.recipesService;
 
 import java.io.IOException;
-// TODO: Remove Iterator
-import java.util.Iterator;
 import java.util.List;
 
 import recipesService.communication.Host;
@@ -45,9 +43,9 @@ public class WorkerStartHandler implements Handler {
     public Hosts getparticipants(Host localNode) {
         Hosts participants = new Hosts(localNode);
         List<Object> startValues = (List<Object>) values;
-        for (Iterator<Object> it = startValues.iterator(); it.hasNext();) {
+        for (Object value : startValues) {
             try {
-                Host node = (Host) Serializer.deserialize((byte[]) it.next());
+                Host node = (Host) Serializer.deserialize((byte[]) value);
                 participants.add(node);
             } catch (ClassNotFoundException | IOException e) {
                 // TODO Auto-generated catch block

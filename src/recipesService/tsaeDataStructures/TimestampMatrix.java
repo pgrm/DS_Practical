@@ -23,8 +23,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
-// TODO: Remove Iterator
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -38,8 +36,8 @@ public class TimestampMatrix implements Serializable {
 
     public TimestampMatrix(List<String> participants) {
         // create and empty TimestampMatrix
-        for (Iterator<String> it = participants.iterator(); it.hasNext();) {
-            timestampMatrix.put(it.next(), new TimestampVector(participants));
+        for (String participant : participants) {
+            timestampMatrix.put(participant, new TimestampVector(participants));
         }
     }
 

@@ -21,8 +21,6 @@ package recipesService.tsaeDataStructures;
 
 import java.io.Serializable;
 import java.util.Enumeration;
-// TODO: Remove Iterator
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Vector;
@@ -46,8 +44,8 @@ public class Log implements Serializable {
 
     public Log(List<String> participants) {
         // create an empty log
-        for (Iterator<String> it = participants.iterator(); it.hasNext();) {
-            log.put(it.next(), new Vector<Operation>());
+        for (String participant : participants) {
+            log.put(participant, new Vector<Operation>());
         }
     }
 

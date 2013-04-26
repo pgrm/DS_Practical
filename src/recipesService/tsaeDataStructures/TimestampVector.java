@@ -22,8 +22,6 @@ package recipesService.tsaeDataStructures;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Enumeration;
-// TODO: Remove Iterator
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -42,10 +40,9 @@ public class TimestampVector implements Serializable {
 
     public TimestampVector(List<String> participants) {
         // create and empty TimestampVector
-        for (Iterator<String> it = participants.iterator(); it.hasNext();) {
-            String id = it.next();
+        for (String participant : participants) {
             // when sequence number of timestamp < 0 it means that the timestamp is the null timestamp
-            timestampVector.put(id, new Timestamp(id, Timestamp.NULL_TIMESTAMP_SEQ_NUMBER));
+            timestampVector.put(participant, new Timestamp(participant, Timestamp.NULL_TIMESTAMP_SEQ_NUMBER));
         }
     }
 

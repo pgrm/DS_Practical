@@ -20,7 +20,6 @@
 package recipesService.data;
 
 import java.io.Serializable;
-// TODO: Remove Iterator
 import java.util.Iterator;
 import java.util.Random;
 import java.util.TreeMap;
@@ -92,25 +91,27 @@ public class Recipes implements Serializable {
                 return false;
             }
             boolean equal = true;
-            for (Iterator<String> it = recipes.keySet().iterator(); it.hasNext() && equal;) {
-                String rcp = it.next();
+            for (String rcp : recipes.keySet()) {
                 equal = recipes.get(rcp).equals(other.recipes.get(rcp));
                 if (!equal) {
+                    break;
                 }
             }
             return equal;
         }
     }
 
+    @Override
     public synchronized String toString() {
         return recipes.toString();
     }
 
+    @Override
     public synchronized Recipes clone() {
         Recipes clone = new Recipes();
 
-        for (Iterator<Recipe> it = recipes.values().iterator(); it.hasNext();) {
-            clone.add(it.next());
+        for (Recipe value : recipes.values()) {
+            clone.add(value);
         }
         return clone;
     }

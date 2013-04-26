@@ -21,8 +21,6 @@ package recipesService.tsaeSessions;
 
 import java.io.IOException;
 import java.net.Socket;
-// TODO: Remove Iterator
-import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
