@@ -20,9 +20,8 @@
 package recipesService.tsaeDataStructures;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -36,7 +35,7 @@ public class TimestampVector implements Serializable {
      * This class stores a summary of the timestamps seen by a node. For each
      * node, stores the timestamp of the last received operation.
      */
-    private ConcurrentHashMap<String, Timestamp> timestampVector = new ConcurrentHashMap<String, Timestamp>();
+    private ConcurrentHashMap<String, Timestamp> timestampVector = new ConcurrentHashMap<>();
 
     public TimestampVector(List<String> participants) {
         // create and empty TimestampVector
@@ -46,20 +45,39 @@ public class TimestampVector implements Serializable {
         }
     }
 
+    private TimestampVector(Map<String, Timestamp> timestampVector) {
+        this.timestampVector = new ConcurrentHashMap<>(timestampVector);
+    }
+
     /**
      * Updates the timestamp vector with a new timestamp.
      *
      * @param timestamp
      */
     public void updateTimestamp(Timestamp timestamp) {
+        if (timestamp != null) {
+            this.timestampVector.replace(timestamp.getHostid(), timestamp);
+        }
     }
 
     /**
-     * merge in another vector, taking the elementwise maximum
+     * merge in another vector, taking the element wise maximum
      *
-     * @param tsVector (a timestamp vector)
+     * @param other (a timestamp vector)
      */
-    public void updateMax(TimestampVector tsVector) {
+    public void updateMax(TimestampVector other) {
+        if (other == null) {
+            return;
+        }
+        for (String node : this.timestampVector.keySet()) {
+            Timestamp otherTimestamp = other.getLast(node);
+
+            if (otherTimestamp == null) {
+                continue;
+            } else if (this.getLast(node).compare(otherTimestamp) < 0) {
+                this.timestampVector.replace(node, otherTimestamp);
+            }
+        }
     }
 
     /**
@@ -68,8 +86,7 @@ public class TimestampVector implements Serializable {
      * @return the last timestamp issued by node that has been received.
      */
     public Timestamp getLast(String node) {
-        // TODO: Implement, remove temporary return statement
-        return null;
+        return this.timestampVector.get(node);
     }
 
     /**
@@ -79,23 +96,54 @@ public class TimestampVector implements Serializable {
      *
      * @param tsVector (timestamp vector)
      */
-    public void mergeMin(TimestampVector tsVector) {
+    public void mergeMin(TimestampVector other) {
+        if (other == null) {
+            return;
+        }
+        for (String node : this.timestampVector.keySet()) {
+            Timestamp otherTimestamp = other.getLast(node);
+
+            if (otherTimestamp == null) {
+                continue;
+            } else if (this.getLast(node).compare(otherTimestamp) > 0) {
+                this.timestampVector.replace(node, otherTimestamp);
+            }
+        }
     }
 
     /**
      * clone
      */
+    @Override
     public TimestampVector clone() {
-        // TODO: Implement, remove temporary return statement
-        return null;
+        return new TimestampVector(this.timestampVector);
+
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        } else if (this == obj) {
+            return true;
+        } else if (!(obj instanceof Log)) {
+            return false;
+        }
+
+        return equals((TimestampVector) obj);
     }
 
     /**
      * equals
      */
-    public boolean equals(TimestampVector tsVector) {
-        // TODO: Implement, remove temporary return statement
-        return false;
+    public boolean equals(TimestampVector other) {
+        if (this.timestampVector == other.timestampVector) {
+            return true;
+        } else if (this.timestampVector == null || other.timestampVector == null) {
+            return false;
+        } else {
+            return this.timestampVector.equals(other.timestampVector);
+        }
     }
 
     /**
@@ -107,8 +155,7 @@ public class TimestampVector implements Serializable {
         if (timestampVector == null) {
             return all;
         }
-        for (Enumeration<String> en = timestampVector.keys(); en.hasMoreElements();) {
-            String name = en.nextElement();
+        for (String name : timestampVector.keySet()) {
             if (timestampVector.get(name) != null) {
                 all += timestampVector.get(name) + "\n";
             }

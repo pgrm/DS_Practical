@@ -20,8 +20,6 @@
 package recipesService.tsaeDataStructures;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TimestampMatrix implements Serializable {
 
     private static final long serialVersionUID = 3331148113387926667L;
-    ConcurrentHashMap<String, TimestampVector> timestampMatrix = new ConcurrentHashMap<String, TimestampVector>();
+    ConcurrentHashMap<String, TimestampVector> timestampMatrix = new ConcurrentHashMap<>();
 
     public TimestampMatrix(List<String> participants) {
         // create and empty TimestampMatrix
@@ -103,8 +101,7 @@ public class TimestampMatrix implements Serializable {
         if (timestampMatrix == null) {
             return all;
         }
-        for (Enumeration<String> en = timestampMatrix.keys(); en.hasMoreElements();) {
-            String name = en.nextElement();
+        for (String name : timestampMatrix.keySet()) {
             if (timestampMatrix.get(name) != null) {
                 all += name + ":   " + timestampMatrix.get(name) + "\n";
             }
