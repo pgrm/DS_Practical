@@ -30,18 +30,18 @@ done
 
 if [ $PHASE1 = "true" ]; then
 # phase 1
-	java -cp ../bin recipesService.test.Phase1TestServer $* &
-	java -cp ../bin recipesService.Phase1 $*
+	java -cp ../build/classes recipesService.test.Phase1TestServer $* &
+	java -cp ../build/classes recipesService.Phase1 $*
 else
 	# phase 2 to 4
 	if [ $LOCAL_TEST_SERVER = "true" ]; then
-		java -cp ../bin recipesService.test.TestServer $* &
+		java -cp ../build/classes recipesService.test.TestServer $* &
 		sleep 1
 	fi
 	
 	sleep 1
 
-	java -cp ../bin recipesService.test.SendArgsToTestServer $*
+	java -cp ../build/classes recipesService.test.SendArgsToTestServer $*
 
 	sleep 3
 
@@ -51,13 +51,14 @@ else
 		if [ $2 -le 4 ]; then
 			# runs each java process in a different terminal emulator window
 			# in case you want to run all processes in the same terminal emulator window run:
-			#		java -cp ./bin:../2013p-practica-SD--LSim-lib/* recipesService.Server $1 $2 &
-			#gnome-terminal -x java -cp ../bin recipesService.Server $* >$FILE &
-			gnome-terminal -x java -cp ../bin recipesService.Server $* &
+			#		java -cp ./build/classes:../2013p-practica-SD--LSim-lib/* recipesService.Server $1 $2 &
+			#gnome-terminal -x java -cp ../build/classes recipesService.Server $* >$FILE &
+			#gnome-terminal -x java -cp ../build/classes recipesService.Server $* &
+                        start java -cp ../build/classes recipesService.Server $*
 		else
 			# runs all java processes in the same terminal emulator window
-	#		java -cp ../bin:../../LSim-libraries/* recipesService.Server $* >$FILE &
-			java -cp ../bin recipesService.Server $* &
+	#		java -cp ../build/classes:../../LSim-libraries/* recipesService.Server $* >$FILE &
+			java -cp ../build/classes recipesService.Server $* &
 		fi
 	done
 fi
