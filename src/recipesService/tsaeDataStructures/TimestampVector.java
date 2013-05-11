@@ -126,7 +126,7 @@ public class TimestampVector implements Serializable {
             return false;
         } else if (this == obj) {
             return true;
-        } else if (!(obj instanceof Log)) {
+        } else if (!(obj instanceof TimestampVector)) {
             return false;
         }
 
