@@ -37,7 +37,7 @@ public class TimestampVector implements Serializable {
      */
     private ConcurrentHashMap<String, Timestamp> timestampVector = new ConcurrentHashMap<>();
 
-    public TimestampVector(List<String> participants) {
+    public TimestampVector(Iterable<String> participants) {
         // create and empty TimestampVector
         for (String participant : participants) {
             // when sequence number of timestamp < 0 it means that the timestamp is the null timestamp
