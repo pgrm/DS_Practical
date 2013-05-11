@@ -19,8 +19,12 @@
  */
 package recipesService.tsaeDataStructures;
 
+import com.sun.org.apache.bcel.internal.generic.ISUB;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -39,21 +43,24 @@ public class TimestampMatrix implements Serializable {
         }
     }
 
-    /**
-     * @param node
-     * @return the timestamp vector of node in this timestamp matrix
-     */
-    private TimestampVector getTimestampVector(String node) {
-        // TODO: Implement, remove temporary return statement
-        return null;
+    private TimestampMatrix() {
     }
 
     /**
-     * Merges two timestamp matrix taking the elementwise maximum
+     * Merges two timestamp matrix taking the element-wise maximum
      *
      * @param tsMatrix
      */
     public void updateMax(TimestampMatrix tsMatrix) {
+        for (Map.Entry<String, TimestampVector> entry : tsMatrix.timestampMatrix.entrySet()) {
+            String key = entry.getKey();
+            TimestampVector otherValue = entry.getValue();
+            
+            TimestampVector thisValue = this.timestampMatrix.get(key);
+            if (thisValue != null) {
+                thisValue.updateMax(otherValue);
+            }
+        }
     }
 
     /**
@@ -63,6 +70,7 @@ public class TimestampMatrix implements Serializable {
      * @param tsVector
      */
     public void update(String node, TimestampVector tsVector) {
+        this.timestampMatrix.replace(node, tsVector);
     }
 
     /**
@@ -71,16 +79,39 @@ public class TimestampMatrix implements Serializable {
      * by all participants
      */
     public TimestampVector minTimestampVector() {
-        // TODO: Implement, remove temporary return statement
-        return null;
+        Iterable<String> participants = this.timestampMatrix.keySet();
+        TimestampVector ret = new TimestampVector(participants);
+        
+        for (String paxOuter : participants) {
+            TimestampVector matrixVector = this.timestampMatrix.get(paxOuter);
+            
+            if (matrixVector == null)
+                continue;
+            
+            for (String paxInner : participants) {
+                Timestamp lastTimestamp = matrixVector.getLast(paxInner);
+                
+                if (this.isTimestampSmallerThan(lastTimestamp, ret.getLast(paxInner))) {
+                    ret.updateTimestamp(lastTimestamp);
+                }
+            }
+        }
+ 
+        return ret;
     }
 
     /**
      * clone
      */
+    @Override
     public TimestampMatrix clone() {
-        // TODO: Implement, remove temporary return statement
-        return null;
+        TimestampMatrix clonedMatrix = new TimestampMatrix();
+
+        for (Map.Entry<String, TimestampVector> entry : timestampMatrix.entrySet()) {
+            clonedMatrix.timestampMatrix.put(entry.getKey(), entry.getValue().clone());
+        }
+
+        return clonedMatrix;
     }
 
     /**
@@ -88,8 +119,23 @@ public class TimestampMatrix implements Serializable {
      */
     @Override
     public boolean equals(Object obj) {
-        // TODO: Implement, remove temporary return statement
-        return false;
+        if (obj == null) {
+            return false;
+        } else if (this == obj) {
+            return true;
+        } else if (!(obj instanceof TimestampMatrix)) {
+            return false;
+        }
+
+        TimestampMatrix other = (TimestampMatrix) obj;
+
+        if (this.timestampMatrix == other.timestampMatrix) {
+            return true;
+        } else if (this.timestampMatrix == null || other.timestampMatrix == null) {
+            return false;
+        } else {
+            return this.timestampMatrix.equals(other.timestampMatrix);
+        }
     }
 
     /**
@@ -107,5 +153,26 @@ public class TimestampMatrix implements Serializable {
             }
         }
         return all;
+    }
+
+    /**
+     * @param node
+     * @return the timestamp vector of node in this timestamp matrix
+     */
+    private TimestampVector getTimestampVector(String node) {
+        return this.timestampMatrix.get(node);
+    }
+
+    private boolean isTimestampSmallerThan(Timestamp smallerTimestamp, Timestamp biggerTimestamp) {
+        if (isTimestampUnassigned(smallerTimestamp))
+            return false;
+        if (isTimestampUnassigned(biggerTimestamp))
+            return true;
+        
+        return smallerTimestamp.compare(biggerTimestamp) < 0;
+    }
+
+    private boolean isTimestampUnassigned(Timestamp lastTimestamp) {
+        return lastTimestamp == null || lastTimestamp.isNullTimestamp();
     }
 }
