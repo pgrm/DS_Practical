@@ -33,12 +33,16 @@ import recipesService.communication.MessageEndTSAE;
 import recipesService.communication.MessageOperation;
 import recipesService.communication.MsgType;
 import recipesService.communication.Host;
-import recipesService.data.Operation;
 import recipesService.tsaeDataStructures.TimestampMatrix;
 import recipesService.tsaeDataStructures.TimestampVector;
 
 import communication.ObjectInputStream_DS;
 import communication.ObjectOutputStream_DS;
+import java.util.ArrayList;
+import recipesService.data.AddOperation;
+import recipesService.data.Operation;
+import recipesService.data.OperationType;
+import recipesService.data.RemoveOperation;
 
 /**
  * @author Joan-Manuel Marques December 2012
@@ -87,8 +91,9 @@ public class TSAESessionOriginatorSide extends TimerTask {
             return;
         }
 
+        Socket socket = null;
         try {
-            Socket socket = new Socket(n.getAddress(), n.getPort());
+            socket = new Socket(n.getAddress(), n.getPort());
             ObjectInputStream_DS in = new ObjectInputStream_DS(socket.getInputStream());
             ObjectOutputStream_DS out = new ObjectOutputStream_DS(socket.getOutputStream());
 
@@ -96,18 +101,36 @@ public class TSAESessionOriginatorSide extends TimerTask {
             // TODO: Finish...
             // TODO: define localSummary, localAck
 //            Message msg = new MessageAErequest(localSummary, localAck);
-            Message msg = new MessageAErequest(null, null);
+            TimestampMatrix localAck;
+            TimestampVector localSummary;
+
+            synchronized (serverData) {
+                localSummary = serverData.getSummary().clone();
+                serverData.getAck().update(serverData.getId(), localSummary);
+                localAck = serverData.getAck().clone();
+            }
+
+            Message msg = new MessageAErequest(localSummary, localAck);
             out.writeObject(msg);
 
             // receive operations from partner
+            List<MessageOperation> operations = new ArrayList<>();
             msg = (Message) in.readObject();
             while (msg.type() == MsgType.OPERATION) {
                 // TODO: Finish...
+                operations.add((MessageOperation) msg);
+
                 msg = (Message) in.readObject();
             }
 
             // receive partner's summary and ack
             if (msg.type() == MsgType.AE_REQUEST) {
+                MessageAErequest aeMsg = (MessageAErequest) msg;
+
+                for (Operation op : serverData.getLog().listNewer(aeMsg.getSummary())) {
+                    out.writeObject(new MessageOperation(op));
+                }
+
                 // TODO: Finish...
                 // send operations
                 // TODO: Finish...
@@ -119,7 +142,26 @@ public class TSAESessionOriginatorSide extends TimerTask {
                 // receive message to inform about the ending of the TSAE session
                 msg = (Message) in.readObject();
                 if (msg.type() == MsgType.END_TSAE) {
-                    // 
+                    synchronized (serverData) {
+                        for (MessageOperation op : operations) {
+                            if (op.getOperation().getType() == OperationType.ADD) {
+                                AddOperation addOp = (AddOperation) op.getOperation();
+
+                                if (serverData.getLog().add(addOp)) {
+                                    serverData.getRecipes().add(addOp.getRecipe());
+                                }
+                            } else {
+                                RemoveOperation removeOp = (RemoveOperation) op.getOperation();
+
+                                if (serverData.getLog().add(removeOp)) {
+                                    serverData.getRecipes().remove(removeOp.getRecipeTitle());
+                                }
+                            }
+                        }
+                        
+                        serverData.getSummary().updateMax(aeMsg.getSummary());
+                        serverData.getAck().updateMax(aeMsg.getAck());
+                    }
                 }
             }
 
@@ -129,6 +171,11 @@ public class TSAESessionOriginatorSide extends TimerTask {
             e.printStackTrace();
             System.exit(1);
         } catch (IOException e) {
+        } finally {
+            try {
+                socket.close();
+            } catch (Exception e) {
+            }
         }
     }
 }
