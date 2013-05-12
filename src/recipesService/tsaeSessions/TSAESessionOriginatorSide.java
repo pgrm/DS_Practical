@@ -91,12 +91,16 @@ public class TSAESessionOriginatorSide extends TimerTask {
             return;
         }
 
+        System.out.println("Originator starts TSAE session with ... " + n);
+
         Socket socket = null;
         try {
             socket = new Socket(n.getAddress(), n.getPort());
             ObjectInputStream_DS in = new ObjectInputStream_DS(socket.getInputStream());
             ObjectOutputStream_DS out = new ObjectOutputStream_DS(socket.getOutputStream());
-
+            
+            System.out.println("Originator - opened streams");
+            
             // Send to partner: local's summary and ack
             // TODO: Finish...
             // TODO: define localSummary, localAck
@@ -109,28 +113,36 @@ public class TSAESessionOriginatorSide extends TimerTask {
                 serverData.getAck().update(serverData.getId(), localSummary);
                 localAck = serverData.getAck().clone();
             }
-
+            
+            System.out.println("Originator - collected local Summary and Ack");
+            
             Message msg = new MessageAErequest(localSummary, localAck);
             out.writeObject(msg);
 
+            System.out.println("Originator - sent AE Request");
+            
             // receive operations from partner
             List<MessageOperation> operations = new ArrayList<>();
             msg = (Message) in.readObject();
             while (msg.type() == MsgType.OPERATION) {
                 // TODO: Finish...
+                System.out.println("Originator - received operation");
                 operations.add((MessageOperation) msg);
-
+                System.out.println("Originator - remembered operation");
+                
                 msg = (Message) in.readObject();
             }
 
             // receive partner's summary and ack
             if (msg.type() == MsgType.AE_REQUEST) {
                 MessageAErequest aeMsg = (MessageAErequest) msg;
-
+                System.out.println("Originator - received AE Request");
+                
                 for (Operation op : serverData.getLog().listNewer(aeMsg.getSummary())) {
                     out.writeObject(new MessageOperation(op));
                 }
-
+                System.out.println("Originator - sent operations");
+                
                 // TODO: Finish...
                 // send operations
                 // TODO: Finish...
@@ -138,10 +150,13 @@ public class TSAESessionOriginatorSide extends TimerTask {
                 // send and "end of TSAE session" message
                 msg = new MessageEndTSAE();
                 out.writeObject(msg);
-
+                System.out.println("Originator - sent EndTSAE");
+                
                 // receive message to inform about the ending of the TSAE session
                 msg = (Message) in.readObject();
                 if (msg.type() == MsgType.END_TSAE) {
+                    System.out.println("Originator - received EndTSAE");
+
                     synchronized (serverData) {
                         for (MessageOperation op : operations) {
                             if (op.getOperation().getType() == OperationType.ADD) {
@@ -158,24 +173,30 @@ public class TSAESessionOriginatorSide extends TimerTask {
                                 }
                             }
                         }
+                        System.out.println("Originator - implemented all operations");
                         
                         serverData.getSummary().updateMax(aeMsg.getSummary());
                         serverData.getAck().updateMax(aeMsg.getAck());
+                        System.out.println("Originator - updated Summary and Ack");
                     }
                 }
             }
-
+            
+            System.out.println("Originator - finishing session");
             socket.close();
         } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
             System.exit(1);
         } catch (IOException e) {
+            e.printStackTrace();
         } finally {
             try {
                 socket.close();
             } catch (Exception e) {
             }
         }
+
+        System.out.println("...originator finished TSAE session with " + n);
     }
 }

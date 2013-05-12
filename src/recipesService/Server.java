@@ -410,7 +410,9 @@ public class Server {
                         System.out.println("IO error trying to read the name");
                         System.exit(1);
                     }
+                    System.out.println("Pre Add Recipe...");
                     serverData.addRecipe(read, read2);
+                    System.out.println("...Post Add Recipe");
                 }
             }
             //Remove

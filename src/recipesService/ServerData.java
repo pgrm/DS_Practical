@@ -128,7 +128,7 @@ public class ServerData {
     // *** add and remove recipes
     // ******************************
     public synchronized void addRecipe(String recipeTitle, String recipe) {
-
+        System.out.println("Adding recipe...");
         Timestamp timestamp = nextTimestamp();
         Recipe rcpe = new Recipe(recipeTitle, recipe, groupId, timestamp);
         Operation op = new AddOperation(rcpe, timestamp);
@@ -136,6 +136,7 @@ public class ServerData {
         this.log.add(op);
         this.summary.updateTimestamp(timestamp);
         this.recipes.add(rcpe);
+        System.out.println("...added recipe!");
     }
 
     public synchronized void removeRecipe(String recipeTitle) {
