@@ -26,6 +26,7 @@ import java.util.Vector;
 
 import communication.ObjectInputStream_DS;
 import communication.ObjectOutputStream_DS;
+import java.util.ArrayList;
 
 import recipesService.ServerData;
 import recipesService.communication.Message;
@@ -33,7 +34,10 @@ import recipesService.communication.MessageAErequest;
 import recipesService.communication.MessageEndTSAE;
 import recipesService.communication.MessageOperation;
 import recipesService.communication.MsgType;
+import recipesService.data.AddOperation;
 import recipesService.data.Operation;
+import recipesService.data.OperationType;
+import recipesService.data.RemoveOperation;
 import recipesService.tsaeDataStructures.TimestampMatrix;
 import recipesService.tsaeDataStructures.TimestampVector;
 
@@ -53,38 +57,85 @@ public class TSAESessionPartnerSide extends Thread {
     }
 
     public void run() {
+        System.out.println("Partner starts TSAE session...");
 
         try {
             ObjectOutputStream_DS out = new ObjectOutputStream_DS(socket.getOutputStream());
             ObjectInputStream_DS in = new ObjectInputStream_DS(socket.getInputStream());
+            System.out.println("Partner - opened streams");
 
             // receive originator's summary and ack
             Message msg = (Message) in.readObject();
             if (msg.type() == MsgType.AE_REQUEST) {
-                // TODO: Finish...
+                MessageAErequest aeMsg = (MessageAErequest) msg;
+                System.out.println("Partner - received AE Request");
 
+                TimestampMatrix localAck;
+                TimestampVector localSummary;
+
+                for (Operation op : serverData.getLog().listNewer(aeMsg.getSummary())) {
+                    out.writeObject(new MessageOperation(op));
+                }
+                System.out.println("Partner - sent operations");
+
+                // TODO: Finish...
                 // send operations
                 // TODO: Finish...
+                synchronized (serverData) {
+                    localSummary = serverData.getSummary().clone();
+                    serverData.getAck().update(serverData.getId(), localSummary);
+                    localAck = serverData.getAck().clone();
+                }
+                System.out.println("Partner - collected local Summary and Ack");
 
                 // send to originator: local's summary and ack
                 // TODO: Finish...
                 // TODO: define localSummary, localAck
 //                msg = new MessageAErequest(localSummary, localAck);
-                msg = new MessageAErequest(null, null);
-                out.writeObject(msg);
+
+                out.writeObject(new MessageAErequest(localSummary, localAck));
+                System.out.println("Partner - sent AE Request");
 
                 // receive operations
+                List<MessageOperation> operations = new ArrayList<>();
                 msg = (Message) in.readObject();
                 while (msg.type() == MsgType.OPERATION) {
                     // TODO: Finish...
+                    System.out.println("Partner - received operation");
+                    operations.add((MessageOperation) msg);
+                    System.out.println("Partner - remembered operation");
+
                     msg = (Message) in.readObject();
                 }
 
                 // receive message to inform about the ending of the TSAE session
                 if (msg.type() == MsgType.END_TSAE) {
+                    System.out.println("Partner - received EndTSAE");
                     // send and "end of TSAE session" message
                     msg = new MessageEndTSAE();
                     out.writeObject(msg);
+                    System.out.println("Partner - sent EndTSAE");
+
+                    synchronized (serverData) {
+                        for (MessageOperation op : operations) {
+                            if (op.getOperation().getType() == OperationType.ADD) {
+                                AddOperation addOp = (AddOperation) op.getOperation();
+
+                                if (serverData.getLog().add(addOp)) {
+                                    serverData.getRecipes().add(addOp.getRecipe());
+                                }
+                            } else {
+                                RemoveOperation removeOp = (RemoveOperation) op.getOperation();
+
+                                if (serverData.getLog().add(removeOp)) {
+                                    serverData.getRecipes().remove(removeOp.getRecipeTitle());
+                                }
+                            }
+                        }
+
+                        serverData.getSummary().updateMax(aeMsg.getSummary());
+                        serverData.getAck().updateMax(aeMsg.getAck());
+                    }
                 }
             }
 
@@ -95,5 +146,7 @@ public class TSAESessionPartnerSide extends Thread {
             System.exit(1);
         } catch (IOException e) {
         }
+
+        System.out.println("...partner finished TSAE session!");
     }
 }
