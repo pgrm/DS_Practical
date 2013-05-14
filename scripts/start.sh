@@ -54,7 +54,8 @@ else
 			#		java -cp ./build/classes:../2013p-practica-SD--LSim-lib/* recipesService.Server $1 $2 &
 			#gnome-terminal -x java -cp ../build/classes recipesService.Server $* >$FILE &
 			#gnome-terminal -x java -cp ../build/classes recipesService.Server $* &
-                        start java -cp ../build/classes recipesService.Server $*
+			#start java -cp ../build/classes recipesService.Server $*
+			konsole -e java -cp ../build/classes recipesService.Server $*
 		else
 			# runs all java processes in the same terminal emulator window
 	#		java -cp ../build/classes:../../LSim-libraries/* recipesService.Server $* >$FILE &
