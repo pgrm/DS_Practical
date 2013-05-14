@@ -21,6 +21,7 @@ package recipesService.tsaeDataStructures;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -59,7 +60,7 @@ public class Log implements Serializable {
         String hostId = op.getTimestamp().getHostid();
         Timestamp lastTimestamp = this.getLastTimestamp(hostId);
         long timestampDifference = op.getTimestamp().compare(lastTimestamp);
-        
+
         if ((lastTimestamp == null && timestampDifference == 0)
                 || (lastTimestamp != null && timestampDifference == 1)) {
             this.log.get(hostId).add(op);
@@ -99,7 +100,37 @@ public class Log implements Serializable {
      *
      * @param ack: ackSummary.
      */
-    public void purgeLog(TimestampMatrix ack) {
+    public synchronized void purgeLog(TimestampMatrix ack) {
+        TimestampVector minTimestampVector = ack.minTimestampVector();
+
+//        StringBuilder sb = new StringBuilder("Log - PurgeLog... Ack-Matrix: ");
+//        sb.append(ack);
+//        sb.append(" - Min-TimestampVector: ");
+//        sb.append(minTimestampVector);
+//        sb.append(" - Log Before purge: ");
+//        sb.append(this);
+        
+        for (Map.Entry<String, List<Operation>> entry : log.entrySet()) {
+            String participant = entry.getKey();
+            List<Operation> operations = entry.getValue();
+            Timestamp lastTimestamp = minTimestampVector.getLast(participant);
+
+            if (lastTimestamp == null) {
+                continue;
+            }
+
+            for (int i = operations.size() - 1; i >= 0; i--) {
+                Operation op = operations.get(i);
+
+                if (op.getTimestamp().compare(lastTimestamp) < 0) {
+                    operations.remove(i);
+                }
+            }
+        }
+        
+//        sb.append(" - Log After purge: ");
+//        sb.append(this);
+//        System.out.println(sb);
     }
 
     /**
