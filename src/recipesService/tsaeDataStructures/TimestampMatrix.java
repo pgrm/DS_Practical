@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TimestampMatrix implements Serializable {
 
     private static final long serialVersionUID = 3331148113387926667L;
-    ConcurrentHashMap<String, TimestampVector> timestampMatrix = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, TimestampVector> timestampMatrix = new ConcurrentHashMap<>();
 
     public TimestampMatrix(List<String> participants) {
         // create and empty TimestampMatrix
@@ -51,16 +51,25 @@ public class TimestampMatrix implements Serializable {
      *
      * @param tsMatrix
      */
-    public void updateMax(TimestampMatrix tsMatrix) {
+    public synchronized void updateMax(TimestampMatrix tsMatrix) {
+//        StringBuilder sb = new StringBuilder("TimestampVector - UpdateMax... This Matrix: ");
+//        sb.append(this);
+//        sb.append(" - Other Matrix: ");
+//        sb.append(tsMatrix);
+        
         for (Map.Entry<String, TimestampVector> entry : tsMatrix.timestampMatrix.entrySet()) {
             String key = entry.getKey();
             TimestampVector otherValue = entry.getValue();
-            
+
             TimestampVector thisValue = this.timestampMatrix.get(key);
             if (thisValue != null) {
                 thisValue.updateMax(otherValue);
             }
         }
+        
+//        sb.append("Updated This Matrix: ");
+//        sb.append(this);
+//        System.out.println(sb);
     }
 
     /**
@@ -69,7 +78,7 @@ public class TimestampMatrix implements Serializable {
      * @param node
      * @param tsVector
      */
-    public void update(String node, TimestampVector tsVector) {
+    public synchronized void update(String node, TimestampVector tsVector) {
         this.timestampMatrix.replace(node, tsVector);
     }
 
@@ -78,25 +87,22 @@ public class TimestampMatrix implements Serializable {
      * @return a timestamp vector containing, for each node, the timestamp known
      * by all participants
      */
-    public TimestampVector minTimestampVector() {
-        Iterable<String> participants = this.timestampMatrix.keySet();
-        TimestampVector ret = new TimestampVector(participants);
-        
-        for (String paxOuter : participants) {
-            TimestampVector matrixVector = this.timestampMatrix.get(paxOuter);
-            
-            if (matrixVector == null)
-                continue;
-            
-            for (String paxInner : participants) {
-                Timestamp lastTimestamp = matrixVector.getLast(paxInner);
-                
-                if (this.isTimestampSmallerThan(lastTimestamp, ret.getLast(paxInner))) {
-                    ret.updateTimestamp(lastTimestamp);
-                }
-            }
+    public synchronized TimestampVector minTimestampVector() {
+        TimestampVector ret = null;        
+
+        for (TimestampVector matrixVector : this.timestampMatrix.values()) {
+            if (ret == null)
+                ret = matrixVector;
+            else
+                ret.mergeMin(matrixVector);
         }
- 
+                
+//        StringBuilder sb = new StringBuilder("TimestampMatrix - MinTimestampVector... Matrix: ");
+//        sb.append(this);
+//        sb.append(" - MinVector: ");
+//        sb.append(ret);
+//        System.out.println(sb);
+        
         return ret;
     }
 
@@ -161,18 +167,5 @@ public class TimestampMatrix implements Serializable {
      */
     private TimestampVector getTimestampVector(String node) {
         return this.timestampMatrix.get(node);
-    }
-
-    private boolean isTimestampSmallerThan(Timestamp smallerTimestamp, Timestamp biggerTimestamp) {
-        if (isTimestampUnassigned(smallerTimestamp))
-            return false;
-        if (isTimestampUnassigned(biggerTimestamp))
-            return true;
-        
-        return smallerTimestamp.compare(biggerTimestamp) < 0;
-    }
-
-    private boolean isTimestampUnassigned(Timestamp lastTimestamp) {
-        return lastTimestamp == null || lastTimestamp.isNullTimestamp();
     }
 }

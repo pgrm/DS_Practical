@@ -20,6 +20,7 @@
 package recipesService.tsaeDataStructures;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -53,7 +54,7 @@ public class TimestampVector implements Serializable {
      *
      * @param timestamp
      */
-    public void updateTimestamp(Timestamp timestamp) {
+    public synchronized void updateTimestamp(Timestamp timestamp) {
         if (timestamp != null) {
             this.timestampVector.replace(timestamp.getHostid(), timestamp);
         }
@@ -64,10 +65,16 @@ public class TimestampVector implements Serializable {
      *
      * @param other (a timestamp vector)
      */
-    public void updateMax(TimestampVector other) {
+    public synchronized void updateMax(TimestampVector other) {
         if (other == null) {
             return;
         }
+        
+//        StringBuilder sb = new StringBuilder("TimestampVector - UpdateMax... This vector: ");
+//        sb.append(this);
+//        sb.append(" - Other vector: ");
+//        sb.append(other);
+        
         for (String node : this.timestampVector.keySet()) {
             Timestamp otherTimestamp = other.getLast(node);
 
@@ -77,6 +84,10 @@ public class TimestampVector implements Serializable {
                 this.timestampVector.replace(node, otherTimestamp);
             }
         }
+        
+//        sb.append("Updated This Vector: ");
+//        sb.append(this);
+//        System.out.println(sb);
     }
 
     /**
@@ -99,6 +110,12 @@ public class TimestampVector implements Serializable {
         if (other == null) {
             return;
         }
+        
+//        StringBuilder sb = new StringBuilder("TimestampVector - MergeMin... This vector: ");
+//        sb.append(this);
+//        sb.append(" - Other vector: ");
+//        sb.append(other);
+        
         for (String node : this.timestampVector.keySet()) {
             Timestamp otherTimestamp = other.getLast(node);
 
@@ -108,6 +125,10 @@ public class TimestampVector implements Serializable {
                 this.timestampVector.replace(node, otherTimestamp);
             }
         }
+        
+//        sb.append("Updated This Vector: ");
+//        sb.append(this);
+//        System.out.println(sb);
     }
 
     /**
