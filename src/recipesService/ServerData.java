@@ -128,7 +128,7 @@ public class ServerData {
     // *** add and remove recipes
     // ******************************
     public synchronized void addRecipe(String recipeTitle, String recipe) {
-        System.out.println("Adding recipe...");
+//        System.out.println("Adding recipe...");
         Timestamp timestamp = nextTimestamp();
         Recipe rcpe = new Recipe(recipeTitle, recipe, groupId, timestamp);
         Operation op = new AddOperation(rcpe, timestamp);
@@ -136,12 +136,30 @@ public class ServerData {
         this.log.add(op);
         this.summary.updateTimestamp(timestamp);
         this.recipes.add(rcpe);
-        System.out.println("...added recipe!");
+//        System.out.println("...added recipe!");
     }
 
     public synchronized void removeRecipe(String recipeTitle) {
+        Timestamp timestamp = nextTimestamp();
+        Recipe rcpe = this.recipes.get(recipeTitle);
+        Operation op = new RemoveOperation(recipeTitle, rcpe.getTimestamp(), timestamp);
 
-        System.err.println("Error: removeRecipe method (recipesService.serverData) not yet implemented");
+        this.log.add(op);
+        this.summary.updateTimestamp(timestamp);
+        this.recipes.remove(recipeTitle);
+//        System.err.println("Error: removeRecipe method (recipesService.serverData) not yet implemented");
+    }
+
+    public synchronized void execOperation(AddOperation addOp) {
+        if (this.log.add(addOp)) {
+            this.recipes.add(addOp.getRecipe());
+        }
+    }
+
+    public synchronized void execOperation(RemoveOperation removeOp) {
+        if (this.log.add(removeOp)) {
+            this.recipes.remove(removeOp.getRecipeTitle());
+        }
     }
 
     // ****************************************************************************
