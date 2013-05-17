@@ -139,6 +139,9 @@ public class ServerData {
 //        System.out.println("...added recipe!");
     }
 
+    /**
+     * Removes the recipe and adds a remove operation to the log.
+     */
     public synchronized void removeRecipe(String recipeTitle) {
         Timestamp timestamp = nextTimestamp();
         Recipe rcpe = this.recipes.get(recipeTitle);
@@ -150,12 +153,20 @@ public class ServerData {
 //        System.err.println("Error: removeRecipe method (recipesService.serverData) not yet implemented");
     }
 
+    /**
+     * When an operation is retrieved from a different peer, it is executed by (in this case)
+     * adding the recipe and remembering the operation in the log.
+     */
     public synchronized void execOperation(AddOperation addOp) {
         if (this.log.add(addOp)) {
             this.recipes.add(addOp.getRecipe());
         }
     }
 
+    /**
+     * When an operation is retrieved from a different peer, it is executed by (in this case)
+     * removing the recipe and remembering the operation in the log.
+     */
     public synchronized void execOperation(RemoveOperation removeOp) {
         if (this.log.add(removeOp)) {
             this.recipes.remove(removeOp.getRecipeTitle());

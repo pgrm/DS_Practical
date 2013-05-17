@@ -101,12 +101,15 @@ public class TSAESessionOriginatorSide extends TimerTask {
 
 //            System.out.println("Originator - opened streams");
 
-            // Send to partner: local's summary and ack
-            // TODO: Finish...
-            // TODO: define localSummary, localAck
-//            Message msg = new MessageAErequest(localSummary, localAck);
             TimestampMatrix localAck;
             TimestampVector localSummary;
+
+            /**
+             * Collect a snapshot of the localSummary and localAck.
+             * It is synchronized so that the matrix or summary doesn't change in between.
+             * Also this is the only place where the local vector in the matrix gets updated
+             * with the localSummary.
+             */
 
             synchronized (serverData) {
                 localSummary = serverData.getSummary().clone();
@@ -116,6 +119,9 @@ public class TSAESessionOriginatorSide extends TimerTask {
 
 //            System.out.println("Originator - collected local Summary and Ack");
 
+            /**
+             * Send the summary and ack-matrix to the other party
+             */
             Message msg = new MessageAErequest(localSummary, localAck);
             out.writeObject(msg);
 
@@ -124,8 +130,11 @@ public class TSAESessionOriginatorSide extends TimerTask {
             // receive operations from partner
             List<MessageOperation> operations = new ArrayList<>();
             msg = (Message) in.readObject();
+            /**
+             * Collect all operations which the other side has but the current server doesn't.
+             * (The execution happens after we know that TSAE was successfull)
+             */
             while (msg.type() == MsgType.OPERATION) {
-                // TODO: Finish...
 //                System.out.println("Originator - received operation");
                 operations.add((MessageOperation) msg);
 //                System.out.println("Originator - remembered operation");
@@ -138,14 +147,13 @@ public class TSAESessionOriginatorSide extends TimerTask {
                 MessageAErequest aeMsg = (MessageAErequest) msg;
 //                System.out.println("Originator - received AE Request");
 
+                /**
+                 * Get all operations newer than those the other side has (the received summary) and send them to the other side.
+                 */
                 for (Operation op : serverData.getLog().listNewer(aeMsg.getSummary())) {
                     out.writeObject(new MessageOperation(op));
                 }
 //                System.out.println("Originator - sent operations");
-
-                // TODO: Finish...
-                // send operations
-                // TODO: Finish...
 
                 // send and "end of TSAE session" message
                 msg = new MessageEndTSAE();
@@ -157,6 +165,9 @@ public class TSAESessionOriginatorSide extends TimerTask {
                 if (msg.type() == MsgType.END_TSAE) {
 //                    System.out.println("Originator - received EndTSAE");
 
+                    /**
+                     * TSEA was successfull => execute the collected operations and update the local server data.
+                     */
                     synchronized (serverData) {
                         for (MessageOperation op : operations) {
                             if (op.getOperation().getType() == OperationType.ADD) {

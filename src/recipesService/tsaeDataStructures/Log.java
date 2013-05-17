@@ -61,6 +61,12 @@ public class Log implements Serializable {
         Timestamp lastTimestamp = this.getLastTimestamp(hostId);
         long timestampDifference = op.getTimestamp().compare(lastTimestamp);
 
+        /**
+         * Check if the inserted Operation is the next to follow.
+         * If yes, insert it and return true so it can be purged eventually later,
+         * otherwise return false so that it is kept for later.
+         */
+        
         if ((lastTimestamp == null && timestampDifference == 0)
                 || (lastTimestamp != null && timestampDifference == 1)) {
             this.log.get(hostId).add(op);
@@ -81,10 +87,18 @@ public class Log implements Serializable {
     public synchronized List<Operation> listNewer(TimestampVector summary) {
         List<Operation> missingList = new Vector();
 
+        /**
+         * Go through all the hosts in the log
+         */
+
         for (String node : this.log.keySet()) {
             List<Operation> operations = this.log.get(node);
             Timestamp timestampToCompare = summary.getLast(node);
 
+        	/**
+        	 * Go through all the operations per host and collect all those which are smaller
+        	 * than the timestampVector passed formthe specific host.
+        	 */
             for (Operation op : operations) {
                 if (op.getTimestamp().compare(timestampToCompare) > 0) {
                     missingList.add(op);
@@ -101,6 +115,10 @@ public class Log implements Serializable {
      * @param ack: ackSummary.
      */
     public synchronized void purgeLog(TimestampMatrix ack) {
+        /**
+         * Create a minTimestampVector from the matrix. Only logs older than this will be purged later.
+         * minTimestampVector guarantees that all clients have received the information up to that timestamp.
+         */
         TimestampVector minTimestampVector = ack.minTimestampVector();
 
 //        StringBuilder sb = new StringBuilder("Log - PurgeLog... Ack-Matrix: ");
@@ -110,15 +128,25 @@ public class Log implements Serializable {
 //        sb.append(" - Log Before purge: ");
 //        sb.append(this);
         
+        /**
+         * Go through all entries in the log map.
+         */
         for (Map.Entry<String, List<Operation>> entry : log.entrySet()) {
             String participant = entry.getKey();
             List<Operation> operations = entry.getValue();
             Timestamp lastTimestamp = minTimestampVector.getLast(participant);
-
+            /**
+             * Take the last timestamp for the node/host/participant.
+             * If there is none, ignore it and continue with the loop
+             */
             if (lastTimestamp == null) {
                 continue;
             }
 
+            /**
+             * Go from back to front through all the operations and delete those, 
+             * which are older than the latest received Timestamp.
+             */
             for (int i = operations.size() - 1; i >= 0; i--) {
                 Operation op = operations.get(i);
 

@@ -57,6 +57,10 @@ public class TimestampMatrix implements Serializable {
 //        sb.append(" - Other Matrix: ");
 //        sb.append(tsMatrix);
         
+        /**
+         * Go through all the items in the passed matrix. 
+         * If a Vector exists in both matrices it is updated to be the maximum vector.
+         */
         for (Map.Entry<String, TimestampVector> entry : tsMatrix.timestampMatrix.entrySet()) {
             String key = entry.getKey();
             TimestampVector otherValue = entry.getValue();
@@ -90,9 +94,16 @@ public class TimestampMatrix implements Serializable {
     public synchronized TimestampVector minTimestampVector() {
         TimestampVector ret = null;        
 
+        /**
+         * Goes through all vectors in the matrix.
+         * It uses the first vector for initialization and runs mergemin between
+         * this vector and all the others. In the end the vector is the
+         * MinTimestampVector of the current matrix.
+         */
+
         for (TimestampVector matrixVector : this.timestampMatrix.values()) {
             if (ret == null)
-                ret = matrixVector;
+                ret = matrixVector.clone();
             else
                 ret.mergeMin(matrixVector);
         }

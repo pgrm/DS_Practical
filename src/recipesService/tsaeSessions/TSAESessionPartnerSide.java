@@ -73,14 +73,13 @@ public class TSAESessionPartnerSide extends Thread {
                 TimestampMatrix localAck;
                 TimestampVector localSummary;
 
-                for (Operation op : serverData.getLog().listNewer(aeMsg.getSummary())) {
-                    out.writeObject(new MessageOperation(op));
-                }
-//                System.out.println("Partner - sent operations");
+                /**
+                 * Collect a snapshot of the localSummary and localAck.
+                 * It is synchronized so that the matrix or summary doesn't change in between.
+                 * Also this is the only place where the local vector in the matrix gets updated
+                 * with the localSummary.
+                 */
 
-                // TODO: Finish...
-                // send operations
-                // TODO: Finish...
                 synchronized (serverData) {
                     localSummary = serverData.getSummary().clone();
                     serverData.getAck().update(serverData.getId(), localSummary);
@@ -88,19 +87,28 @@ public class TSAESessionPartnerSide extends Thread {
                 }
 //                System.out.println("Partner - collected local Summary and Ack");
 
-                // send to originator: local's summary and ack
-                // TODO: Finish...
-                // TODO: define localSummary, localAck
-//                msg = new MessageAErequest(localSummary, localAck);
+                /**
+                 * Get all operations newer than those the other side has (the received summary) and send them to the other side.
+                 */
+                for (Operation op : serverData.getLog().listNewer(aeMsg.getSummary())) {
+                    out.writeObject(new MessageOperation(op));
+                }
+//                System.out.println("Partner - sent operations");
 
+                /**
+                 * Send the summary and ack-matrix to the other party
+                 */
                 out.writeObject(new MessageAErequest(localSummary, localAck));
 //                System.out.println("Partner - sent AE Request");
 
                 // receive operations
                 List<MessageOperation> operations = new ArrayList<>();
                 msg = (Message) in.readObject();
+                /**
+                 * Collect all operations which the other side has but the current server doesn't.
+                 * (The execution happens after we know that TSAE was successfull)
+                 */
                 while (msg.type() == MsgType.OPERATION) {
-                    // TODO: Finish...
 //                    System.out.println("Partner - received operation");
                     operations.add((MessageOperation) msg);
 //                    System.out.println("Partner - remembered operation");
@@ -116,6 +124,9 @@ public class TSAESessionPartnerSide extends Thread {
                     out.writeObject(msg);
 //                    System.out.println("Partner - sent EndTSAE");
 
+                    /**
+                     * TSEA was successfull => execute the collected operations and update the local server data.
+                     */
                     synchronized (serverData) {
                         for (MessageOperation op : operations) {
                             if (op.getOperation().getType() == OperationType.ADD) {

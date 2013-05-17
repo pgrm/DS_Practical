@@ -69,12 +69,18 @@ public class TimestampVector implements Serializable {
         if (other == null) {
             return;
         }
-        
+
 //        StringBuilder sb = new StringBuilder("TimestampVector - UpdateMax... This vector: ");
 //        sb.append(this);
 //        sb.append(" - Other vector: ");
 //        sb.append(other);
-        
+
+        /**
+         * Goes through all the nodes in the currect vector and looks for the same node
+         * in the other vector. If one exists and it's timestamp is higher than the current,
+         * the current timestamp gets replaced.
+         */
+
         for (String node : this.timestampVector.keySet()) {
             Timestamp otherTimestamp = other.getLast(node);
 
@@ -84,7 +90,7 @@ public class TimestampVector implements Serializable {
                 this.timestampVector.replace(node, otherTimestamp);
             }
         }
-        
+
 //        sb.append("Updated This Vector: ");
 //        sb.append(this);
 //        System.out.println(sb);
@@ -106,26 +112,34 @@ public class TimestampVector implements Serializable {
      *
      * @param tsVector (timestamp vector)
      */
-    public void mergeMin(TimestampVector other) {
+    public synchronized void mergeMin(TimestampVector other) {
         if (other == null) {
             return;
         }
-        
+
 //        StringBuilder sb = new StringBuilder("TimestampVector - MergeMin... This vector: ");
 //        sb.append(this);
 //        sb.append(" - Other vector: ");
 //        sb.append(other);
-        
-        for (String node : this.timestampVector.keySet()) {
-            Timestamp otherTimestamp = other.getLast(node);
 
-            if (otherTimestamp == null) {
-                continue;
-            } else if (this.getLast(node).compare(otherTimestamp) > 0) {
+        /**
+         * Similar to update max with the difference that I also add new entries if they
+         * don't yet exist in the current timestamp vector. This is due to the way,
+         * this function is used by TimetampMatrix.
+         */
+
+        for (Map.Entry<String, Timestamp> entry : other.timestampVector.entrySet()) {
+            String node = entry.getKey();
+            Timestamp otherTimestamp = entry.getValue();
+            Timestamp thisTimestamp = this.getLast(node);
+            
+            if (thisTimestamp == null) {
+                this.timestampVector.put(node, otherTimestamp);
+            } else if (otherTimestamp.compare(thisTimestamp) < 0) {
                 this.timestampVector.replace(node, otherTimestamp);
             }
         }
-        
+
 //        sb.append("Updated This Vector: ");
 //        sb.append(this);
 //        System.out.println(sb);
